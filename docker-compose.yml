@@ -1,0 +1,18 @@
+version: "3"
+
+services:
+
+  api:
+    build: .
+    container_name: tesla_api
+    ports:
+      - "8000:8000"
+
+  dashboard:
+    build: .
+    container_name: tesla_dashboard
+    command: streamlit run app_streamlit.py --server.port 8501 --server.address 0.0.0.0
+    ports:
+      - "8501:8501"
+    depends_on:
+      - api

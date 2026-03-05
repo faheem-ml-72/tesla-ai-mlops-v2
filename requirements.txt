@@ -1,0 +1,10 @@
+tensorflow-cpu
+fastapi
+uvicorn
+streamlit
+scikit-learn
+xgboost
+joblib
+pandas
+numpy
+
