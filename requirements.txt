@@ -1,11 +1,13 @@
-tensorflow-cpu==2.15.0
-keras==2.15.0
 fastapi
 uvicorn
-streamlit
+numpy
+pandas
 scikit-learn
 xgboost
 joblib
-pandas
-numpy
+yfinance
+plotly
+streamlit
+tensorflow==2.13.0
+keras==2.13.1
 
