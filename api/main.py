@@ -4,7 +4,7 @@ import numpy as np
 import joblib
 import pandas as pd
 import logging
-from tensorflow.keras.models import load_model
+import tensorflow as tf
 from pydantic import BaseModel
 from typing import List
 
@@ -40,7 +40,10 @@ app.add_middleware(
 try:
     logger.info("Loading models...")
 
-    lstm_model = load_model("models/lstm_saved_model")
+    lstm_model = tf.keras.layers.TFSMLayer(
+    "models/lstm_saved_model",
+    call_endpoint="serve"
+)
     gp_model = joblib.load("models/gp_uncertainty_model.pkl")
     xgb_model = joblib.load("models/xgb_tesla_model.pkl")
 
