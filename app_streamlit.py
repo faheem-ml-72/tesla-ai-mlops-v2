@@ -166,3 +166,41 @@ if st.button("Predict Tesla Price"):
 
         except Exception as e:
             st.error(f"Connection error: {e}")
+
+        st.subheader("📊 Model Monitoring")
+
+import pandas as pd
+
+try:
+    log_df = pd.read_csv("api/data/predictions.csv")
+
+    if len(log_df) > 0:
+
+        st.write("Recent Predictions")
+
+        st.dataframe(log_df.tail(20))
+
+        # prediction trend
+        fig = go.Figure()
+
+        fig.add_trace(go.Scatter(
+            x=log_df["timestamp"],
+            y=log_df["forecast_price"],
+            mode="lines+markers",
+            name="Predictions"
+        ))
+
+        fig.update_layout(
+            template="plotly_dark",
+            title="Prediction Trend",
+            xaxis_title="Time",
+            yaxis_title="Predicted Price"
+        )
+
+        st.plotly_chart(fig, use_container_width=True)
+
+    else:
+        st.info("No predictions logged yet.")
+
+except:
+    st.warning("Prediction log not found yet.")

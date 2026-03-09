@@ -40,7 +40,7 @@ app.add_middleware(
 try:
     logger.info("Loading models...")
 
-    lstm_model = load_model("models/lstm_tesla_model.keras")
+    lstm_model = load_model("models/lstm_saved_model")
     gp_model = joblib.load("models/gp_uncertainty_model.pkl")
     xgb_model = joblib.load("models/xgb_tesla_model.pkl")
 
