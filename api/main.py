@@ -41,7 +41,7 @@ try:
     logger.info("Loading models...")
 
     lstm_model = load_model(
-        "models/lstm_tesla_model.keras",
+        "models/lstm_tesla_model.h5",
         compile=False,
         safe_mode=False
     )
