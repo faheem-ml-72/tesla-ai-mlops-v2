@@ -7,6 +7,7 @@ import logging
 import tensorflow as tf
 from pydantic import BaseModel
 from typing import List
+import os
 
 # -------------------------------
 # Logging configuration
@@ -33,6 +34,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Ensure prediction folder exists
+os.makedirs("api/data", exist_ok=True)
+
 # -------------------------------
 # Load models at startup
 # -------------------------------
@@ -40,10 +44,12 @@ app.add_middleware(
 try:
     logger.info("Loading models...")
 
+    # Load TensorFlow SavedModel
     lstm_model = tf.keras.layers.TFSMLayer(
-    "models/lstm_saved_model",
-    call_endpoint="serve"
-)
+        "models/lstm_saved_model",
+        call_endpoint="serving_default"
+    )
+
     gp_model = joblib.load("models/gp_uncertainty_model.pkl")
     xgb_model = joblib.load("models/xgb_tesla_model.pkl")
 
@@ -92,7 +98,7 @@ def predict(input_data: InputData):
 
         arr = np.array(input_data.data)
 
-        # Validate input
+        # Validate input shape
         if arr.shape != (30, 5):
             raise HTTPException(
                 status_code=400,
@@ -100,25 +106,46 @@ def predict(input_data: InputData):
             )
 
         # Reshape for LSTM
-        X_input = arr.reshape(1, 30, 5)
+        X_input = arr.reshape(1, 30, 5).astype(np.float32)
 
+        # -------------------
         # LSTM prediction
-        lstm_pred = lstm_model.predict(X_input, verbose=0)[0][0]
+        # -------------------
 
+        lstm_output = lstm_model(X_input)
+
+        # Handle TensorFlow output safely
+        if isinstance(lstm_output, dict):
+            lstm_output = list(lstm_output.values())[0]
+
+        lstm_pred = float(lstm_output.numpy().flatten()[0])
+
+        # -------------------
         # XGBoost prediction
-        xgb_input = X_input.reshape(1, -1)
-        xgb_pred = xgb_model.predict(xgb_input)[0]
+        # -------------------
 
+        xgb_input = X_input.reshape(1, -1)
+        xgb_pred = float(xgb_model.predict(xgb_input)[0])
+
+        # -------------------
         # Ensemble prediction
+        # -------------------
+
         ensemble_pred = 0.6 * lstm_pred + 0.4 * xgb_pred
 
+        # -------------------
         # Gaussian Process uncertainty
+        # -------------------
+
         _, gp_std = gp_model.predict([[ensemble_pred]], return_std=True)
 
         lower_bound = ensemble_pred - 2 * gp_std[0]
         upper_bound = ensemble_pred + 2 * gp_std[0]
 
-        # Risk level classification
+        # -------------------
+        # Risk classification
+        # -------------------
+
         if gp_std[0] < 0.02:
             risk = "Low"
         elif gp_std[0] < 0.05:
@@ -126,7 +153,10 @@ def predict(input_data: InputData):
         else:
             risk = "High"
 
-        # Save prediction history
+        # -------------------
+        # Save prediction log
+        # -------------------
+
         prediction_log = pd.DataFrame([{
             "prediction": float(ensemble_pred),
             "uncertainty": float(gp_std[0]),
